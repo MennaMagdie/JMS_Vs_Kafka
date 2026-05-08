@@ -1,7 +1,7 @@
+
 import jakarta.jms.*;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import java.util.Arrays;
-
 
 public class App {
 
@@ -24,9 +24,8 @@ public class App {
             // producer.setDeliveryMode(DeliveryMode.NON_PERSISTENT);
             producer.setDeliveryMode(DeliveryMode.PERSISTENT);
 
-            
             byte[] payload = new byte[1024]; // 1kb as required
-            Arrays.fill(payload, (byte) 1); 
+            Arrays.fill(payload, (byte) 1);
 
             long[] responseTimes = new long[NUM_MESSAGES];
             // System.out.println("producing 1000 messages...");
@@ -37,7 +36,7 @@ public class App {
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 BytesMessage message = session.createBytesMessage();
                 message.writeBytes(payload);
-                
+
                 // long start = System.currentTimeMillis();
                 // producer.send(message);
                 // responseTimes[i] = System.currentTimeMillis() - start;
