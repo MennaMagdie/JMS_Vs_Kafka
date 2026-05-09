@@ -5,7 +5,7 @@ import java.util.*;
 public class ConsumeResponseTime {
 
 public static void main(String[] args) {
-        // 1. Initialize the consumer using your base config [cite: 44]
+        // 1. Initialize the consumer using your base config 
         KafkaConsumer<String, String> consumer = KafkaConsumerBase.createConsumerBase();
         List<Long> responseTimes = new ArrayList<>();
         int totalRuns = 1000; 

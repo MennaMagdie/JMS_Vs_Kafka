@@ -13,7 +13,7 @@ public class ConsumerLatencyTest {
         KafkaConsumer<String, String> consumer = KafkaConsumerBase.createConsumerBase();
         
         List<Long> latencies = new ArrayList<>();
-        int targetMessages = 10000; // Lab requirement for latency test
+        int targetMessages = 10000;
         int totalReceived = 0;
 
         System.out.println("CONSUMER LATENCY TEST: Waiting for 10,000 messages...");
