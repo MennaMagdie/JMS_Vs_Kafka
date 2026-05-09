@@ -1,8 +1,9 @@
+package com.example;
 import org.apache.kafka.clients.consumer.*;
 import java.time.Duration;
 import java.util.*;
 
-public class ConsumeResponseTime {
+public class ConsumerResponseTime {
 
 public static void main(String[] args) {
         // 1. Initialize the consumer using your base config 
@@ -13,12 +14,12 @@ public static void main(String[] args) {
         
         int totalMessages = 0;
         for (int i = 0; i < totalRuns; i++) {
-            long start = System.currentTimeMillis();
+            long start = System.nanoTime();
             ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));
-            long responseTime = System.currentTimeMillis() - start;
+            long responseTime = System.nanoTime() - start;
 
             totalMessages += records.count();
-            responseTimes.add(responseTime);
+            responseTimes.add(responseTime); // store in nanoseconds
         }
         System.out.println("Total messages retrieved: " + totalMessages);
 
@@ -34,7 +35,7 @@ public static void main(String[] args) {
 
         System.out.println("--- Results ---");
         System.out.println("Total Runs: " + responseTimes.size());
-        System.out.println("Median Response Time: " + median + " ms");
+        System.out.println("Median Response Time: " + median / 1_000_000.0 + " ms");
 
         consumer.close();
     }
