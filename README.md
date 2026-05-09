@@ -15,6 +15,8 @@ bin\activemq.bat start
 Web Console: `http://localhost:8161/`
 > credentials — username: `admin` , password: `admin`
 
+![alt text](images/jms-producer.png)
+
 ---
 
 ## Compiling
@@ -51,23 +53,32 @@ java -cp ".;...\apache-activemq-6.2.5\lib\*" MaxThroughput
 
 ---
 
-## Running Order
+## Performance Metrics
+### Running Order
 
-### 1. Consume Response Time
+#### 1. Producer Response Time
+Run `App.java`
+
+![alt text](images/jms-producer-msgs.png)
+
+![alt text](images/image-1.png)
+
+#### 2. Consume Response Time
 Run `App` first, then `Consumer`
 
-### 2. End-to-End Latency
+#### 3. End-to-End Latency
 Run `App` and `Consumer` concurrently
 > Do **not** start `Consumer` before `App` — it will freeze waiting for messages
 
-### 3. Max Throughput
+#### 4. Max Throughput
 Run `MaxThroughput` alone — it internally creates both a producer and consumer and measures throughput between them
 
----
+running MaxThroughput through the following X values [100 , 200 , 400 , 800 , 1600 , 3200 , 6400]
+![alt text](images/MaxThroughput_1.png) 
+then ran values [12000 , 20000, 25600 , 40000]
+![alt text](images/MaxThroughput_2.png) 
 
-## Max Throughput — JMeter Alternative
 
-**Test Plan structure:**
 ```
 Test Plan
 └── Thread Group
@@ -93,8 +104,9 @@ Test Plan
 | 400 | 24,000 |
 | 800 | 48,000 |
 
-![alt text](images/jms-producer.png)
 
-![alt text](images/jms-producer-msgs.png)
 
-![alt text](images/image-1.png)
+## Conclusion
+**JMS/ActiveMQ** is the right tool for *reliable delivery of individual transactional messages* and the stack used itself is Java-centric.
+
+**Kafka** is the right tool when you need *high-throughput event streaming, replayability, or multiple independent consumers* reading the same data.

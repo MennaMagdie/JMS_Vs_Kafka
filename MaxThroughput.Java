@@ -1,4 +1,4 @@
-import javax.jms.*;
+import jakarta.jms.*;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import java.util.Arrays;
 
@@ -11,7 +11,9 @@ public class MaxThroughput {
         byte[] payload = new byte[1024]; // 1 KB
         Arrays.fill(payload, (byte) 1);
 
-        int[] steps = {100, 200, 400, 800, 1600, 3200, 6400};
+        //int[] steps = {100, 200, 400, 800, 1600, 3200, 6400};
+        //int[] steps = {12000, 20000 ,25600}; 
+        int[] steps = {51200, 102400, 204800};
         int maxThroughput = 0;
 
         try {
@@ -22,7 +24,7 @@ public class MaxThroughput {
             Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             Destination destination = session.createQueue(queueName);
             MessageProducer producer = session.createProducer(destination);
-            producer.setDeliveryMode(DeliveryMode.PERSISTENT);
+            producer.setDeliveryMode(DeliveryMode.PERSISTENT); // producer in presistent mode
 
             // Also set up a consumer to verify messages are actually received
             MessageConsumer consumer = session.createConsumer(destination);
@@ -34,6 +36,7 @@ public class MaxThroughput {
                 long period = 1000 / X; // ms between each message
                 boolean anyFailed = false;
 
+                // Produce Loop
                 // --- Produce X messages at rate X msg/sec ---
                 for (int i = 0; i < X; i++) {
                     BytesMessage message = session.createBytesMessage();
@@ -42,16 +45,17 @@ public class MaxThroughput {
                     message.setIntProperty("messageId", i);
                     producer.send(message);
 
-                    // Sleep for period minus 20% to account for thread-switch overhead
+                    // Sleep for period minus 20% to account for thread-switch overhead (T-0.2T)
                     long sleep = (long)(period * 0.8);
                     if (sleep > 0) Thread.sleep(sleep);
                 }
 
+                // Consume Loop
                 // --- Try to consume all X messages within a timeout ---
                 int received = 0;
                 for (int i = 0; i < X; i++) {
-                    // Timeout = 3x the full period window — generous but bounded
-                    Message msg = consumer.receive(3000);
+                    // Timeout
+                    Message msg = consumer.receive(100);
                     if (msg != null) {
                         received++;
                     } else {
@@ -73,7 +77,7 @@ public class MaxThroughput {
             }
 
             if (maxThroughput == steps[steps.length - 1]) {
-                System.out.println(">>> Max Throughput: >= " + maxThroughput + " msg/sec (consider adding higher steps)");
+                System.out.println(">>> Max Throughput: >= " + maxThroughput + " msg/sec");
             }
 
             producer.close();
