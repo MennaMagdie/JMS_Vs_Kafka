@@ -1,6 +1,8 @@
 import jakarta.jms.*;
 import org.apache.activemq.ActiveMQConnectionFactory;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class MaxThroughput {
 
@@ -11,9 +13,7 @@ public class MaxThroughput {
         byte[] payload = new byte[1024]; // 1 KB
         Arrays.fill(payload, (byte) 1);
 
-        //int[] steps = {100, 200, 400, 800, 1600, 3200, 6400};
-        //int[] steps = {12000, 20000 ,25600}; 
-        int[] steps = {51200, 102400, 204800};
+        int[] steps = {100, 200, 400, 800, 1600};
         int maxThroughput = 0;
 
         try {
@@ -28,46 +28,62 @@ public class MaxThroughput {
 
             // Also set up a consumer to verify messages are actually received
             MessageConsumer consumer = session.createConsumer(destination);
-
             // the idea : test on a loop the values of X till one breaks(error>0), then the previous X was the maxThroughput
             for (int X : steps) {
                 System.out.println("Testing throughput: " + X + " msg/sec...");
 
                 long period = 1000 / X; // ms between each message
-                boolean anyFailed = false;
+                AtomicInteger received = new AtomicInteger(0);
+                AtomicBoolean anyFailed = new AtomicBoolean(false);
 
-                // Produce Loop
-                // --- Produce X messages at rate X msg/sec ---
-                for (int i = 0; i < X; i++) {
-                    BytesMessage message = session.createBytesMessage();
-                    message.writeBytes(payload);
-                    message.setLongProperty("sendTime", System.currentTimeMillis());
-                    message.setIntProperty("messageId", i);
-                    producer.send(message);
-
-                    // Sleep for period minus 20% to account for thread-switch overhead (T-0.2T)
-                    long sleep = (long)(period * 0.8);
-                    if (sleep > 0) Thread.sleep(sleep);
-                }
-
-                // Consume Loop
-                // --- Try to consume all X messages within a timeout ---
-                int received = 0;
-                for (int i = 0; i < X; i++) {
-                    // Timeout
-                    Message msg = consumer.receive(100);
-                    if (msg != null) {
-                        received++;
-                    } else {
-                        anyFailed = true;
-                        break;
+                // Consumer Thread — starts first, listens while producer sends
+                Thread consumerThread = new Thread(() -> {
+                    long startTime = System.currentTimeMillis();
+                    for (int i = 0; i < X; i++) {
+                        try {
+                            Message msg = consumer.receive(1000);
+                            if (msg != null) {
+                                received.incrementAndGet();
+                            } else {
+                                anyFailed.set(true);
+                                break;
+                            }
+                        } catch (JMSException e) {
+                            anyFailed.set(true);
+                            break;
+                        }
                     }
-                }
+                });
 
-                if (received < X) anyFailed = true;
+                // Producer Thread — sends at rate X msg/sec
+                Thread producerThread = new Thread(() -> {
+                    for (int i = 0; i < X; i++) {
+                        try {
+                            BytesMessage message = session.createBytesMessage();
+                            message.writeBytes(payload);
+                            message.setLongProperty("sendTime", System.currentTimeMillis());
+                            message.setIntProperty("messageId", i);
+                            producer.send(message);
 
-                if (anyFailed) {
-                    System.out.println("FAILED at " + X + " msg/sec (only received " + received + "/" + X + ")");
+                            // Sleep for period minus 20% to account for thread-switch overhead (T-0.2T)
+                            long sleep = (long)(period * 0.8);
+                            if (sleep > 0) Thread.sleep(sleep);
+                        } catch (Exception e) {
+                            anyFailed.set(true);
+                        }
+                    }
+                });
+
+                // Start consumer first so it's ready before producer sends
+                consumerThread.start();
+                producerThread.start();
+
+                // Wait for both to finish
+                producerThread.join();
+                consumerThread.join();
+
+                if (anyFailed.get() || received.get() < X) {
+                    System.out.println("FAILED at " + X + " msg/sec (only received " + received.get() + "/" + X + ")");
                     System.out.println(">>> Max Throughput: " + maxThroughput + " msg/sec");
                     break;
                 } else {
@@ -84,9 +100,8 @@ public class MaxThroughput {
             consumer.close();
             session.close();
             connection.close();
-
-        } catch (Exception e) {
-            e.printStackTrace();
+        }catch(Exception e){
+            // ...
         }
     }
 }

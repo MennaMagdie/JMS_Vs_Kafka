@@ -7,7 +7,7 @@ import java.util.Arrays;
 // 2. end-to-end latency = time of receive - sendTime
 public class Consumer {
 
-    private static final int NUM_MESSAGES = 1000;
+    private static final int NUM_MESSAGES = 10000;
 
     public static void main(String[] args) {
         String brokerUrl = "tcp://localhost:61616";
@@ -30,7 +30,6 @@ public class Consumer {
             for (int i = 0; i < NUM_MESSAGES; i++) {
                 long startTime = System.currentTimeMillis();
                 Message message = consumer.receive(); // blocks until a message arrives
-                // or can use consumer.receive(5000) to blocks for 5 seconds, then returns null instead of infinit freeze of consumer.receive()
 
                 long receiveTime = System.currentTimeMillis();
                 responseTimes[i] = receiveTime - startTime;

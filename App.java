@@ -5,7 +5,7 @@ import java.util.Arrays;
 
 public class App {
 
-    private static final int NUM_MESSAGES = 1000;
+    private static final int NUM_MESSAGES = 10000;
 
     public static void main(String[] args) {
         String brokerUrl = "tcp://localhost:61616";
